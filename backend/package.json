@@ -1,5 +1,19 @@
 {
+  "name": "futsal-court-backend", 
+  "main": "dist/server.js", 
   "dependencies": {
     "express": "^5.2.1"
-  }
+  },
+  "devDependencies": {
+    "@types/express": "^6.0.6",
+    "@types/node": "^25.2.3",
+    "nodemon": "^3.1.11",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  },
+  "scripts": {
+  "start": "node dist/server.js",
+  "dev": "ts-node-dev --respawn src/server.ts",
+  "build": "tsc"
+}
 }
