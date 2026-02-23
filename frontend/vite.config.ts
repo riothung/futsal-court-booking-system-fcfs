@@ -1,36 +1,18 @@
-import path from 'path';
-import checker from 'vite-plugin-checker';
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react-swc';
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import svgr from "vite-plugin-svgr";
 
-// ----------------------------------------------------------------------
-
-const PORT = 3039;
-
+// https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
-    checker({
-      typescript: true,
-      eslint: {
-        useFlatConfig: true,
-        lintCommand: 'eslint "./src/**/*.{js,jsx,ts,tsx}"',
-        dev: { logLevel: ['error'] },
-      },
-      overlay: {
-        position: 'tl',
-        initialIsOpen: false,
+    svgr({
+      svgrOptions: {
+        icon: true,
+        // This will transform your SVG to a React component
+        exportType: "named",
+        namedExport: "ReactComponent",
       },
     }),
   ],
-  resolve: {
-    alias: [
-      {
-        find: /^src(.+)/,
-        replacement: path.resolve(process.cwd(), 'src/$1'),
-      },
-    ],
-  },
-  server: { port: PORT, host: true },
-  preview: { port: PORT, host: true },
 });
