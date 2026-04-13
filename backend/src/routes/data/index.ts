@@ -1,7 +1,14 @@
-const router = require("express").Router();
-const data = require("../../controllers/data/data");
+// const router = require("express").Router();
+import { Router } from "express";
+// const data = require("../../controllers/data/data");
+import * as inputData from "../../controllers/data/data";
 
-// POST
-router.post("/addUser", data.createData);
+const router = Router();
 
+// POST Method
+router.post("/createUser", inputData.createUser);
+router.post("/createCourt", inputData.createCourt);
+
+// GET Method
+router.get("/getCourt", inputData.getCourts);
 export default router;

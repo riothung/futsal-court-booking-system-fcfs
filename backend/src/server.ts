@@ -1,7 +1,7 @@
 import "dotenv/config";
 import express, { Application, Request, Response } from "express";
 import cors from "cors";
-import dotenv from "dotenv";
+// import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 
 // const router = require("./routes/index");
@@ -9,10 +9,11 @@ import router from "./routes/index";
 
 const app: Application = express();
 
-const port: number = 3000;
+const port: number = 5000;
 
-dotenv.config();
 app.use(cookieParser());
+
+app.use(express.json());
 
 app.use(
   cors({
@@ -44,5 +45,5 @@ app.get("/api/read-cookies", (req: Request, res: Response) => {
 });
 
 app.listen(port, () => {
-  console.log(`Server is running on PORT:${port}`);
+  console.log(`Server is running on PORT: ${port}`);
 });
