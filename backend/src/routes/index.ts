@@ -3,6 +3,7 @@
 import { Request, Response } from "express";
 import { Router } from "express";
 import dataRouter from "./data/index";
+import authRouter from "./auth/index";
 
 const router = Router();
 
@@ -11,5 +12,6 @@ router.get("/testApi", (req: Request, res: Response) => {
 });
 
 router.use("/data", dataRouter);
+router.use("/auth", authRouter);
 
 export default router;
