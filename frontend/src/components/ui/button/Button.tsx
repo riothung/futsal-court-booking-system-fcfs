@@ -9,10 +9,10 @@ interface ButtonProps {
   onClick?: () => void; // Click handler
   disabled?: boolean; // Disabled state
   className?: string; // Disabled state
-  type: string;
+  type?: "button" | "submit" | "reset";
 }
 
-const Button: React.FC<ButtonProps> = ({ children, size = "md", variant = "primary", startIcon, endIcon, onClick, className = "", disabled = false }) => {
+const Button: React.FC<ButtonProps> = ({ children, size = "md", variant = "primary", startIcon, endIcon, onClick, className = "", disabled = false, type = "button" }) => {
   // Size Classes
   const sizeClasses = {
     sm: "px-4 py-3 text-sm",
@@ -27,6 +27,7 @@ const Button: React.FC<ButtonProps> = ({ children, size = "md", variant = "prima
 
   return (
     <button
+      type={type}
       className={`inline-flex items-center justify-center gap-2 rounded-lg transition ${className} ${sizeClasses[size]} ${variantClasses[variant]} ${disabled ? "cursor-not-allowed opacity-50" : ""}`}
       onClick={onClick}
       disabled={disabled}

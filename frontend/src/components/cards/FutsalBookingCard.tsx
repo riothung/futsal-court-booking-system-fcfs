@@ -2,10 +2,11 @@ type CardItem = {
   image?: string;
   title: string;
   price: number;
-  onBook: (courtName: string) => void;
+  courtId: number;
+  onBook: (courtId: number, courtName: string, price: number) => void;
 };
 
-export const FutsalBookingCard: React.FC<CardItem> = ({ title, price, image, onBook }) => {
+export const FutsalBookingCard: React.FC<CardItem> = ({ title, price, image, courtId, onBook }) => {
   return (
     <>
       <div className="bg-white dark:bg-gray-900 dark:border-gray-800 rounded-2xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 w-full">
@@ -18,7 +19,7 @@ export const FutsalBookingCard: React.FC<CardItem> = ({ title, price, image, onB
 
           <p className="text-green-600 font-bold text-md">Rp. {price.toLocaleString("id-ID")} / Jam</p>
           <button
-            onClick={() => onBook(title)}
+            onClick={() => onBook(courtId, title, price)}
             className="
           w-full
           bg-blue-600

@@ -1,10 +1,7 @@
 import "dotenv/config";
 import express, { Application, Request, Response } from "express";
 import cors from "cors";
-// import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
-
-// const router = require("./routes/index");
 import router from "./routes/index";
 
 const app: Application = express();
@@ -18,7 +15,7 @@ app.use(express.json());
 app.use(
   cors({
     credentials: true,
-    origin: "*",
+    origin: "http://localhost:5173",
   }),
 );
 
@@ -30,19 +27,6 @@ app.use(
 );
 
 app.use("/api", router);
-
-app.get("/api/check-token", (req: Request, res: Response) => {
-  res.json({ cookies: req.cookies });
-});
-
-app.get("/api/read-cookies", (req: Request, res: Response) => {
-  const myCookie = req.cookies.myCookie;
-  if (myCookie) {
-    res.send(`Cookie's value: ${myCookie}`);
-  } else {
-    res.send(`No cookie found!`);
-  }
-});
 
 app.listen(port, () => {
   console.log(`Server is running on PORT: ${port}`);
