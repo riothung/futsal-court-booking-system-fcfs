@@ -12,23 +12,25 @@ export interface AuthRequest extends Request {
 
 export const verifyToken = (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const authHeader = req.headers.authorization;
+    let token: string | undefined;
 
-    if (!authHeader)
-      return res.status(401).json({
-        message: "Unauthorized!",
-      });
+    if (req.cookies && req.cookies.token) {
+      token = req.cookies.token;
+    } else {
+      const authHeader = req.headers.authorization;
+      if (authHeader) {
+        token = authHeader.split(" ")[1];
+      }
+    }
 
-    const token = authHeader.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({ message: "Unauthorized!" });
+    }
 
-    const decoded = jwt.verifyToken(token, process.env.TOKEN_SECRET as string) as JwtPayload;
-
+    const decoded = jwt.verify(token, process.env.TOKEN_SECRET as string) as JwtPayload;
     req.user = decoded;
-
     next();
   } catch (err) {
-    return res.status(401).json({
-      message: `Invalid token: ${err}`,
-    });
+    return res.status(401).json({ message: `Invalid token: ${err}` });
   }
 };

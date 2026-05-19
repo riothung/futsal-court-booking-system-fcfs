@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
-
-// Assume these icons are imported from an icon library
-// import { BoxCubeIcon, CalenderIcon, ChevronDownIcon, GridIcon, HorizontaLDots, ListIcon, PageIcon, PieChartIcon, PlugInIcon, TableIcon, UserCircleIcon } from "../icons";
-import { ChevronDownIcon, GridIcon, HorizontaLDots, ListIcon } from "../icons";
+import { ChevronDownIcon, GridIcon, HorizontaLDots, ListIcon, TableIcon, TaskIcon, UserIcon } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import SidebarWidget from "./SidebarWidget";
+import { getRole } from "../../services/api";
 
 type NavItem = {
   name: string;
@@ -14,21 +12,20 @@ type NavItem = {
   subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
 };
 
-const navItems: NavItem[] = [
-  {
-    icon: <GridIcon />,
-    name: "Dashboard",
-    path: "/",
-    // subItems: [{ name: "Ecommerce", path: "/", pro: false }],
-  },
-  {
-    icon: <ListIcon />,
-    name: "Booking",
-    path: "/booking",
-  },
-];
-
 const AppSidebar: React.FC = () => {
+  const role = getRole();
+  const navItems: NavItem[] = [
+    ...(role === "admin"
+      ? [
+          { icon: <GridIcon />, name: "Dashboard", path: "/dashboard" },
+          { icon: <TableIcon />, name: "Daftar Lapangan", path: "/manage-courts" },
+          { icon: <UserIcon />, name: "Manage Users", path: "/manage-users" },
+        ]
+      : []),
+    { icon: <ListIcon />, name: "Booking", path: "/booking" },
+    { icon: <TaskIcon />, name: "Riwayat Booking", path: "/my-bookings" },
+    ...(role === "admin" ? [{ icon: <TaskIcon />, name: "Kelola Booking", path: "/manage-bookings" }] : []),
+  ];
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const location = useLocation();
 
