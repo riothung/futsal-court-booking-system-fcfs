@@ -1,47 +1,39 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "mysql"
-  url = env("DATABASE_URL")
+  url      = env("DATABASE_URL")
 }
 
 model User {
-  id Int @id @default(autoincrement())
-  phone_number String @db.VarChar(12)
-  email String @unique
-  password String
-  username String @db.VarChar(50)
-  role String
-  created_at DateTime @default(now())
-  bookings Bookings[]
+  id           Int       @id @default(autoincrement())
+  phone_number String    @db.VarChar(12)
+  email        String    @unique
+  password     String
+  username     String    @db.VarChar(50)
+  role         String
+  created_at   DateTime  @default(now())
+  bookings     Bookings[]
 }
 
 model Court {
-  id Int @id @default(autoincrement())
-  court_name String
+  id            Int       @id @default(autoincrement())
+  court_name    String
   price_per_hour Int
-  created_at DateTime @default(now())
+  created_at    DateTime  @default(now())
+  bookings      Bookings[]
 }
 
 model Bookings {
-  id Int @id @default(autoincrement())
-  id_user Int
-  user User @relation(fields: [id_user], references: [id])
-  bookingSlots BookingsSlots[]
-}
-
-model BookingsSlots {
-  id Int @id @default(autoincrement())
-  id_booking Int
-  bookings Bookings @relation(fields: [id_booking], references: [id])
+  id         Int      @id @default(autoincrement())
+  id_user    Int
+  id_court   Int
   start_time DateTime
-  end_time DateTime
+  end_time   DateTime
+  status     String   @default("PENDING")
+  created_at DateTime @default(now())
+  user       User     @relation(fields: [id_user], references: [id])
+  court      Court    @relation(fields: [id_court], references: [id])
 }
-
