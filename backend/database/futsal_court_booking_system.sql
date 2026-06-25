@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 21, 2026 at 06:38 AM
+-- Generation Time: Jun 25, 2026 at 07:11 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -34,17 +34,26 @@ CREATE TABLE `bookings` (
   `end_time` datetime(3) NOT NULL,
   `id_court` int(11) NOT NULL,
   `start_time` datetime(3) NOT NULL,
-  `status` varchar(191) NOT NULL DEFAULT 'PENDING'
+  `status` varchar(191) NOT NULL DEFAULT 'PENDING',
+  `down_payment` int(11) DEFAULT NULL,
+  `lock_expires_at` datetime(3) DEFAULT NULL,
+  `payment_type` varchar(191) DEFAULT 'FULL'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `bookings`
 --
 
-INSERT INTO `bookings` (`id`, `id_user`, `created_at`, `end_time`, `id_court`, `start_time`, `status`) VALUES
-(1, 1, '2026-05-18 16:40:27.639', '2026-05-22 15:00:00.000', 1, '2026-05-22 13:00:00.000', 'CONFIRMED'),
-(2, 1, '2026-05-18 16:51:19.733', '2026-05-23 08:00:00.000', 1, '2026-05-23 07:00:00.000', 'CONFIRMED'),
-(3, 1, '2026-05-19 03:20:36.225', '2026-05-19 09:00:00.000', 1, '2026-05-19 07:00:00.000', 'CANCELLED');
+INSERT INTO `bookings` (`id`, `id_user`, `created_at`, `end_time`, `id_court`, `start_time`, `status`, `down_payment`, `lock_expires_at`, `payment_type`) VALUES
+(1, 1, '2026-05-18 16:40:27.639', '2026-05-22 15:00:00.000', 1, '2026-05-22 13:00:00.000', 'CONFIRMED', NULL, NULL, 'FULL'),
+(2, 1, '2026-05-18 16:51:19.733', '2026-05-23 08:00:00.000', 1, '2026-05-23 07:00:00.000', 'CONFIRMED', NULL, NULL, 'FULL'),
+(3, 1, '2026-05-19 03:20:36.225', '2026-05-19 09:00:00.000', 1, '2026-05-19 07:00:00.000', 'CANCELLED', NULL, NULL, 'FULL'),
+(4, 1, '2026-05-21 04:48:43.898', '2026-05-21 09:00:00.000', 1, '2026-05-21 07:00:00.000', 'PENDING', NULL, NULL, 'FULL'),
+(5, 9, '2026-05-21 04:50:39.198', '2026-05-26 08:00:00.000', 1, '2026-05-26 07:00:00.000', 'PENDING', NULL, NULL, 'FULL'),
+(6, 9, '2026-06-22 07:26:23.330', '2026-06-22 02:00:00.000', 1, '2026-06-22 01:00:00.000', 'CANCELLED', 37500, '2026-06-22 07:41:23.326', 'DP'),
+(7, 1, '2026-06-22 07:29:23.047', '2026-06-22 02:00:00.000', 1, '2026-06-22 01:00:00.000', 'DP', 37500, '2026-06-22 07:44:23.046', 'DP'),
+(8, 1, '2026-06-22 07:30:10.332', '2026-06-22 06:00:00.000', 1, '2026-06-22 02:00:00.000', 'DP', 150000, '2026-06-22 07:45:10.330', 'DP'),
+(9, 1, '2026-06-25 04:49:02.158', '2026-06-25 06:00:00.000', 1, '2026-06-25 05:00:00.000', 'CANCELLED', 37500, '2026-06-25 05:04:02.155', 'DP');
 
 -- --------------------------------------------------------
 
@@ -64,7 +73,7 @@ CREATE TABLE `court` (
 --
 
 INSERT INTO `court` (`id`, `court_name`, `price_per_hour`, `created_at`) VALUES
-(1, 'Lapangan Futsal Tanah Merah', 75000, '2026-04-13 14:34:55.087');
+(1, 'Lapangan Candra Utama Futsal', 75000, '2026-04-13 14:34:55.087');
 
 -- --------------------------------------------------------
 
@@ -124,7 +133,7 @@ ALTER TABLE `user`
 -- AUTO_INCREMENT for table `bookings`
 --
 ALTER TABLE `bookings`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `court`
