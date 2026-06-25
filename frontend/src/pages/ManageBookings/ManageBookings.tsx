@@ -3,9 +3,19 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import { getAllBookings, updateBookingStatus, Booking } from "../../../services/booking/booking.service";
 
 const statusBadge: Record<string, string> = {
+  LOCKED: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
   PENDING: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+  DP: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
   CONFIRMED: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
   CANCELLED: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+};
+
+const statusLabel: Record<string, string> = {
+  LOCKED: "Menunggu Pembayaran",
+  PENDING: "Pending",
+  DP: "Uang Muka Dibayar",
+  CONFIRMED: "Terkonfirmasi",
+  CANCELLED: "Dibatalkan",
 };
 
 export default function ManageBookings() {
@@ -20,8 +30,8 @@ export default function ManageBookings() {
     try {
       const data = await getAllBookings();
       setBookings(data);
-    } catch (err) {
-      setError("Failed to load bookings");
+    } catch {
+      setError("Gagal memuat booking");
     }
   }
 
@@ -29,8 +39,8 @@ export default function ManageBookings() {
     try {
       await updateBookingStatus({ id, status });
       loadBookings();
-    } catch (err) {
-      setError("Failed to update status");
+    } catch {
+      setError("Gagal update status");
     }
   }
 
@@ -55,6 +65,7 @@ export default function ManageBookings() {
                 <th className="text-left py-3 px-2 text-sm font-medium dark:text-gray-300">Tanggal</th>
                 <th className="text-left py-3 px-2 text-sm font-medium dark:text-gray-300">Jam</th>
                 <th className="text-left py-3 px-2 text-sm font-medium dark:text-gray-300">Status</th>
+                <th className="text-left py-3 px-2 text-sm font-medium dark:text-gray-300">Pembayaran</th>
                 <th className="text-right py-3 px-2 text-sm font-medium dark:text-gray-300">Aksi</th>
               </tr>
             </thead>
@@ -77,10 +88,27 @@ export default function ManageBookings() {
                     <td className="py-3 px-2 text-sm dark:text-gray-300">{timeStr}</td>
                     <td className="py-3 px-2 text-sm">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusBadge[b.status] || ""}`}>
-                        {b.status}
+                        {statusLabel[b.status] || b.status}
                       </span>
                     </td>
+                    <td className="py-3 px-2 text-sm dark:text-gray-300">
+                      {b.payment_type === "DP" && b.down_payment ? (
+                        <span>DP Rp {b.down_payment.toLocaleString("id-ID")}</span>
+                      ) : b.payment_type === "FULL" ? (
+                        <span className="text-green-600">Lunas</span>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </td>
                     <td className="py-3 px-2 text-sm text-right">
+                      {b.status === "LOCKED" && (
+                        <button
+                          onClick={() => handleStatus(b.id, "CANCELLED")}
+                          className="text-red-600 hover:underline text-xs"
+                        >
+                          Cancel
+                        </button>
+                      )}
                       {b.status === "PENDING" && (
                         <>
                           <button
@@ -97,7 +125,31 @@ export default function ManageBookings() {
                           </button>
                         </>
                       )}
-                      {b.status !== "PENDING" && (
+                      {b.status === "DP" && (
+                        <>
+                          <button
+                            onClick={() => handleStatus(b.id, "CONFIRMED")}
+                            className="text-green-600 hover:underline mr-3"
+                          >
+                            Konfirmasi Lunas
+                          </button>
+                          <button
+                            onClick={() => handleStatus(b.id, "CANCELLED")}
+                            className="text-red-600 hover:underline"
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      )}
+                      {b.status === "CONFIRMED" && (
+                        <button
+                          onClick={() => handleStatus(b.id, "CANCELLED")}
+                          className="text-red-600 hover:underline"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                      {["CANCELLED"].includes(b.status) && (
                         <span className="text-gray-400 text-xs">-</span>
                       )}
                     </td>
@@ -106,7 +158,7 @@ export default function ManageBookings() {
               })}
               {bookings.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="py-6 text-center text-gray-500">
+                  <td colSpan={8} className="py-6 text-center text-gray-500">
                     Belum ada booking
                   </td>
                 </tr>

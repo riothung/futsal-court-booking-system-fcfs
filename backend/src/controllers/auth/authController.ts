@@ -35,7 +35,7 @@ export const login = async (req: Request<{}, {}, AuthBody>, res: Response) => {
 
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) return res.status(400).json({ message: "Email doesn't exist!" });
-    if (password != user.password) return res.status(400).json({ message: "Wrong password!" });
+    if (password != user.password) return res.status(400).json({ message: "Email or Password is wrong!" });
 
     const tokenPayload = { userId: user.id, userRole: user.role };
     const token = jwt.sign(tokenPayload, process.env.TOKEN_SECRET, { expiresIn: "1 day" });

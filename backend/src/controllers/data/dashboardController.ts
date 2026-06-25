@@ -11,14 +11,18 @@ export const getStats = async (req: AuthRequest, res: Response) => {
     const totalCourts = await prisma.court.count();
     const totalUsers = await prisma.user.count();
 
-    const confirmedBookings = await prisma.bookings.findMany({
-      where: { status: "CONFIRMED" },
+    const paidBookings = await prisma.bookings.findMany({
+      where: { status: { in: ["CONFIRMED", "DP"] } },
       include: { court: true },
     });
 
-    const totalRevenue = confirmedBookings.reduce((sum, b) => {
+    const totalRevenue = paidBookings.reduce((sum, b) => {
       const hours = (new Date(b.end_time).getTime() - new Date(b.start_time).getTime()) / (1000 * 60 * 60);
-      return sum + Math.ceil(hours) * b.court.price_per_hour;
+      const fullPrice = Math.ceil(hours) * b.court.price_per_hour;
+      if (b.payment_type === "DP" && b.down_payment) {
+        return sum + b.down_payment;
+      }
+      return sum + fullPrice;
     }, 0);
 
     return res.status(200).json({
@@ -27,7 +31,7 @@ export const getStats = async (req: AuthRequest, res: Response) => {
         totalCourts,
         totalUsers,
         totalRevenue,
-        totalBookings: confirmedBookings.length,
+        totalBookings: paidBookings.length,
       },
     });
   } catch (err) {

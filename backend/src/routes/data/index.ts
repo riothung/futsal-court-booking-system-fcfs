@@ -8,11 +8,14 @@ const router = Router();
 
 router.post("/createCourt", authMiddleware.verifyToken, inputData.createCourt);
 router.post("/createBooking", authMiddleware.verifyToken, bookingController.createBooking);
+router.post("/confirmPayment", authMiddleware.verifyToken, bookingController.confirmPayment);
+router.post("/releaseExpiredLocks", bookingController.releaseExpiredLocksEndpoint);
 router.put("/updateCourt", authMiddleware.verifyToken, inputData.updateCourt);
 router.put("/updateBookingStatus", authMiddleware.verifyToken, bookingController.updateBookingStatus);
 router.delete("/deleteCourt", authMiddleware.verifyToken, inputData.deleteCourt);
 
 router.get("/getCourt", inputData.getCourts);
+router.get("/getCourtSchedule", authMiddleware.verifyToken, bookingController.getCourtSchedule);
 router.get("/getMyBookings", authMiddleware.verifyToken, bookingController.getMyBookings);
 router.get("/getAllBookings", authMiddleware.verifyToken, bookingController.getAllBookings);
 router.get("/getStats", authMiddleware.verifyToken, dashboardController.getStats);

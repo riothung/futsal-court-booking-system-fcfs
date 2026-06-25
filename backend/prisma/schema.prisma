@@ -27,13 +27,16 @@ model Court {
 }
 
 model Bookings {
-  id         Int      @id @default(autoincrement())
-  id_user    Int
-  id_court   Int
-  start_time DateTime
-  end_time   DateTime
-  status     String   @default("PENDING")
-  created_at DateTime @default(now())
-  user       User     @relation(fields: [id_user], references: [id])
-  court      Court    @relation(fields: [id_court], references: [id])
+  id              Int       @id @default(autoincrement())
+  id_user         Int
+  id_court        Int
+  start_time      DateTime
+  end_time        DateTime
+  status          String    @default("PENDING")
+  payment_type    String?   @default("FULL")
+  down_payment    Int?
+  lock_expires_at DateTime?
+  created_at      DateTime  @default(now())
+  user            User      @relation(fields: [id_user], references: [id])
+  court           Court     @relation(fields: [id_court], references: [id])
 }

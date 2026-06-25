@@ -6,6 +6,7 @@ import { getCourts, Court } from "../../../services/court/court.service";
 
 export default function Booking() {
   const [courts, setCourts] = useState<Court[]>([]);
+  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split("T")[0]);
 
   useEffect(() => {
     getCourts().then(setCourts);
@@ -20,7 +21,19 @@ export default function Booking() {
   };
 
   return (
-    <>
+    <div className="space-y-6">
+      <div className="max-w-5xl mx-auto p-6 pb-0">
+        <div className="flex items-center gap-4 mb-2">
+          <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Pilih Tanggal:</label>
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="border rounded-lg px-4 py-2 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+          />
+        </div>
+        <p className="text-xs text-gray-400">Jam operasional: 09:00 - 22:00</p>
+      </div>
       {courts.map((court) => (
         <div key={court.id} className="max-w-5xl mx-auto p-6">
           <FutsalBookingCard
@@ -34,6 +47,7 @@ export default function Booking() {
       ))}
       {selectedCourt && (
         <BookingModal
+          key={`${selectedCourt.id}-${selectedDate}`}
           isOpen={isOpen}
           onClose={() => setIsOpen(false)}
           courtId={selectedCourt.id}
@@ -41,6 +55,6 @@ export default function Booking() {
           pricePerHour={selectedCourt.price}
         />
       )}
-    </>
+    </div>
   );
 }
