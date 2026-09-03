@@ -12,10 +12,12 @@ app.use(cookieParser());
 
 app.use(express.json());
 
+const allowedOrigins = ["http://localhost:5173", "https://lv90n1x3-5173.asse.devtunnels.ms"];
+
 app.use(
   cors({
     credentials: true,
-    origin: "http://localhost:5173",
+    origin: allowedOrigins,
   }),
 );
 

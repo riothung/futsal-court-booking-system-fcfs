@@ -3,7 +3,14 @@ export interface ApiResponse<T> {
   data: T;
 }
 
-const baseURL = "http://localhost:5000/api";
+const APIURLS = {
+  local: "http://localhost:5000/api",
+  tunnel: "https://lv90n1x3-5000.asse.devtunnels.ms/api",
+};
+
+// const baseURL = "http://localhost:5000/api";
+// const baseURL = "https://lv90n1x3-5000.asse.devtunnels.ms/api";
+const baseURL = window.location.hostname === "localhost" ? APIURLS.local : APIURLS.tunnel;
 
 export const setRole = (role: string): void => {
   localStorage.setItem("role", role);
