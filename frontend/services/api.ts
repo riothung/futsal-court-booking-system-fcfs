@@ -39,7 +39,10 @@ export const fetcher = async <T>(endpoint: string, options: RequestInit = {}): P
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({ message: "Request Failed" }));
-    throw new Error(errorData.message || "Request Failed");
+    const err: any = new Error(errorData.message || "Request Failed");
+    err.status = res.status;
+    err.data = errorData;
+    throw err;
   }
 
   return res.json();

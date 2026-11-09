@@ -64,6 +64,13 @@ export const confirmPayment = async (data: {
   return res.data;
 };
 
+export const cancelBooking = async (booking_id: number): Promise<void> => {
+  await fetcher("/data/cancelBooking", {
+    method: "POST",
+    body: JSON.stringify({ booking_id }),
+  });
+};
+
 export const getMyBookings = async (): Promise<Booking[]> => {
   const res = await fetcher<ApiResponse<Booking[]>>("/data/getMyBookings");
   return res.data;

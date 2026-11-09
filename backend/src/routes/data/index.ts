@@ -9,6 +9,7 @@ const router = Router();
 router.post("/createCourt", authMiddleware.verifyToken, inputData.createCourt);
 router.post("/createBooking", authMiddleware.verifyToken, bookingController.createBooking);
 router.post("/confirmPayment", authMiddleware.verifyToken, bookingController.confirmPayment);
+router.post("/cancelBooking", authMiddleware.verifyToken, bookingController.cancelBooking);
 router.post("/releaseExpiredLocks", bookingController.releaseExpiredLocksEndpoint);
 router.put("/updateCourt", authMiddleware.verifyToken, inputData.updateCourt);
 router.put("/updateBookingStatus", authMiddleware.verifyToken, bookingController.updateBookingStatus);

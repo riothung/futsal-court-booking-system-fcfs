@@ -3,6 +3,7 @@ import {
   getCourtSchedule,
   createBookingWithLock,
   confirmPayment,
+  cancelBooking,
   Booking,
   CreateBookingResponse,
 } from "../../../services/booking/booking.service";
@@ -17,7 +18,7 @@ interface BookingModalProps {
 
 const ALL_HOURS = Array.from({ length: 13 }, (_, i) => i + 9);
 const DURATIONS = [1, 2, 3, 4];
-const LOCK_MINUTES = 15;
+const LOCK_MINUTES = 5;
 
 function formatTime(h: number) {
   return `${String(h).padStart(2, "0")}:00`;
@@ -50,6 +51,15 @@ function getSlotStatus(schedule: Booking[], startH: number, endH: number) {
   return "booked";
 }
 
+function formatRemaining(expiresAt: string, now: number) {
+  const diff = new Date(expiresAt).getTime() - now;
+  if (diff <= 0) return "00:00";
+  const totalSec = Math.floor(diff / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
 export const BookingModal = ({ isOpen, onClose, courtId, courtName, pricePerHour }: BookingModalProps) => {
   const todayStr = new Date().toISOString().split("T")[0];
   const [step, setStep] = useState<"form" | "payment">("form");
@@ -60,6 +70,12 @@ export const BookingModal = ({ isOpen, onClose, courtId, courtName, pricePerHour
   const [lockedBooking, setLockedBooking] = useState<CreateBookingResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [conflictInfo, setConflictInfo] = useState<{
+    status: string;
+    lock_expires_at: string | null;
+    message: string;
+  } | null>(null);
+  const [now, setNow] = useState(Date.now());
 
   const loadSchedule = useCallback(async () => {
     if (!date) return;
@@ -79,8 +95,23 @@ export const BookingModal = ({ isOpen, onClose, courtId, courtName, pricePerHour
       setHours(1);
       setLockedBooking(null);
       setError("");
+      setNow(Date.now());
     }
   }, [isOpen, loadSchedule]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const hasExpiredLock = schedule.some(
+      (b) => b.status === "LOCKED" && b.lock_expires_at && new Date(b.lock_expires_at).getTime() <= now,
+    );
+    if (hasExpiredLock) loadSchedule();
+  }, [now, schedule, isOpen, loadSchedule]);
 
   const startHour = startTime ? Number(startTime) : 0;
   const endHour = startHour + hours;
@@ -128,8 +159,23 @@ export const BookingModal = ({ isOpen, onClose, courtId, courtName, pricePerHour
       });
       setLockedBooking(result);
       setStep("payment");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Booking gagal!");
+    } catch (err: any) {
+      if (err.status === 409 && err.data?.conflict) {
+        const conflict = err.data.conflict;
+        let message = "Slot sudah dibooking!";
+
+        if (conflict.status === "LOCKED" && conflict.lock_expires_at) {
+          const expires = new Date(conflict.lock_expires_at);
+          message = `Slot ini sedang diproses oleh pengguna lain. Waktu proses 5 menit. Silakan tunggu hingga ${expires.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} atau pilih jam lain.`;
+        } else if (conflict.status === "DP" || conflict.status === "CONFIRMED") {
+          message = "Slot ini sudah dipesan oleh pengguna lain. Silakan pilih jam lain.";
+        }
+
+        setConflictInfo({ status: conflict.status, lock_expires_at: conflict.lock_expires_at, message });
+        setError("");
+      } else {
+        setError(err instanceof Error ? err.message : "Booking gagal!");
+      }
     } finally {
       setLoading(false);
     }
@@ -150,6 +196,22 @@ export const BookingModal = ({ isOpen, onClose, courtId, courtName, pricePerHour
     }
   };
 
+  const handleCancelLock = async () => {
+    if (!lockedBooking) {
+      onClose();
+      return;
+    }
+    setLoading(true);
+    try {
+      await cancelBooking(lockedBooking.id);
+    } catch (err) {
+      console.error("Gagal membatalkan booking:", err);
+    } finally {
+      setLoading(false);
+      onClose();
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -165,6 +227,28 @@ export const BookingModal = ({ isOpen, onClose, courtId, courtName, pricePerHour
             {error && (
               <div className="mb-3 p-3 text-sm text-red-600 bg-red-100 rounded-lg dark:bg-red-900/30 dark:text-red-400">
                 {error}
+              </div>
+            )}
+
+            {conflictInfo && (
+              <div className="mb-3 p-3 text-sm text-blue-800 bg-blue-50 rounded-lg border border-blue-200 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300">
+                {conflictInfo.message}
+                {conflictInfo.status === "LOCKED" && conflictInfo.lock_expires_at && (
+                  <div className="mt-1 text-xs text-blue-600 dark:text-blue-400">
+                    ⏳ Waktu proses 5 menit. Slot akan dibuka kembali secara otomatis pada {new Date(conflictInfo.lock_expires_at).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}.
+                  </div>
+                )}
+                {conflictInfo.status === "LOCKED" && (
+                  <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Mohon menunggu atau silahkan pilih slot lain.
+                  </div>
+                )}
+                <button
+                  onClick={() => setConflictInfo(null)}
+                  className="mt-2 text-xs underline text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                >
+                  Tutup notifikasi
+                </button>
               </div>
             )}
 
@@ -192,6 +276,15 @@ export const BookingModal = ({ isOpen, onClose, courtId, courtName, pricePerHour
                       const isSelected = startHour === h;
                       const isPast = date === todayStr && h <= new Date().getHours() + new Date().getMinutes() / 60;
                       const clickable = status === "free" && !isPast;
+                      const lockedBooking = schedule.find((b) => {
+                        if (b.status !== "LOCKED") return false;
+                        const bs = new Date(b.start_time).getHours();
+                        const be = new Date(b.end_time).getHours();
+                        return bs < slotEnd && be > h;
+                      });
+                      const lockRemaining = lockedBooking?.lock_expires_at
+                        ? formatRemaining(lockedBooking.lock_expires_at, now)
+                        : null;
 
                       let rowClass = "border-b dark:border-gray-700 transition-colors ";
                       if (isPast) {
@@ -224,7 +317,17 @@ export const BookingModal = ({ isOpen, onClose, courtId, courtName, pricePerHour
                                 <span className="text-green-600 dark:text-green-400 font-medium">Tersedia</span>
                               )}
                               {!isPast && status === "locked" && (
-                                <span className="text-yellow-600 dark:text-yellow-400 font-medium">Sedang diproses</span>
+                                <div className="flex flex-col">
+                                  <span className="text-yellow-600 dark:text-yellow-400 font-medium">
+                                    Sedang diproses{" "}
+                                    {lockRemaining !== null && (
+                                      <span className="font-mono tabular-nums">(sisa {lockRemaining})</span>
+                                    )}
+                                  </span>
+                                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                                    Mohon menunggu atau silahkan pilih slot lain
+                                  </span>
+                                </div>
                               )}
                               {!isPast && status === "booked" && (
                                 <span className="text-red-600 dark:text-red-400 font-medium">Terbooking</span>
@@ -319,7 +422,7 @@ export const BookingModal = ({ isOpen, onClose, courtId, courtName, pricePerHour
                 </div>
 
                 <p className="text-xs text-gray-400 text-center">
-                  Slot akan dikunci 15 menit setelah booking untuk pembayaran.
+                  Slot akan dikunci 5 menit setelah booking untuk pembayaran.
                 </p>
               </div>
             </div>
@@ -331,6 +434,7 @@ export const BookingModal = ({ isOpen, onClose, courtId, courtName, pricePerHour
             pricePerHour={pricePerHour}
             hours={hours}
             onPay={handlePayment}
+            onCancel={handleCancelLock}
             onClose={onClose}
             loading={loading}
             error={error}
@@ -347,6 +451,7 @@ function PaymentView({
   pricePerHour,
   hours,
   onPay,
+  onCancel,
   onClose,
   loading,
   error,
@@ -356,6 +461,7 @@ function PaymentView({
   pricePerHour: number;
   hours: number;
   onPay: (type: "DP" | "FULL") => void;
+  onCancel: () => void;
   onClose: () => void;
   loading: boolean;
   error: string;
@@ -476,7 +582,7 @@ function PaymentView({
 
           <div className="flex gap-3 pt-2">
             <button
-              onClick={onClose}
+              onClick={onCancel}
               disabled={loading}
               className="flex-1 border-2 rounded-lg py-2.5 text-sm font-medium disabled:opacity-50 dark:border-gray-600 dark:text-gray-300"
             >

@@ -2,7 +2,7 @@ import { Response } from "express";
 import prisma from "../../db";
 import { AuthRequest } from "../../middleware/authMiddleware";
 
-const LOCK_DURATION_MINUTES = 15;
+const LOCK_DURATION_MINUTES = 5;
 const OPENING_HOUR = 9;
 const CLOSING_HOUR = 22;
 
@@ -87,7 +87,21 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
       });
 
       if (existing) {
-        throw new Error("SLOT_ALREADY_BOOKED");
+        const err = new Error("SLOT_ALREADY_BOOKED") as Error & {
+          conflict?: {
+            status: string;
+            lock_expires_at: Date | null;
+            start_time: Date;
+            end_time: Date;
+          };
+        };
+        err.conflict = {
+          status: existing.status,
+          lock_expires_at: existing.lock_expires_at,
+          start_time: existing.start_time,
+          end_time: existing.end_time,
+        };
+        throw err;
       }
 
       const lockExpires = new Date(Date.now() + LOCK_DURATION_MINUTES * 60 * 1000);
@@ -111,7 +125,7 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
     });
 
     return res.status(201).json({
-      message: "Booking created! Complete payment within 15 minutes.",
+      message: `Booking created! Complete payment within ${LOCK_DURATION_MINUTES} minutes.`,
       data: {
         ...booking,
         total_price: Math.ceil((new Date(end_time).getTime() - new Date(start_time).getTime()) / (1000 * 60 * 60)) * court.price_per_hour,
@@ -120,7 +134,25 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
     });
   } catch (err) {
     if (err instanceof Error && err.message === "SLOT_ALREADY_BOOKED") {
-      return res.status(409).json({ message: "Slot already booked!" });
+      const conflict = (err as any).conflict;
+      let message = "Slot sudah dibooking!";
+      let lockExpiresAt: string | null = null;
+
+      if (conflict?.status === "LOCKED" && conflict?.lock_expires_at) {
+        const expires = new Date(conflict.lock_expires_at);
+        lockExpiresAt = expires.toISOString();
+        message = `Slot ini sedang diproses oleh pengguna lain. Silakan tunggu hingga ${expires.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} atau pilih jam lain.`;
+      } else if (conflict?.status === "DP" || conflict?.status === "CONFIRMED") {
+        message = "Slot ini sudah dipesan oleh pengguna lain. Silakan pilih jam lain.";
+      }
+
+      return res.status(409).json({
+        message,
+        conflict: {
+          status: conflict?.status || "UNKNOWN",
+          lock_expires_at: lockExpiresAt,
+        },
+      });
     }
     return res.status(500).json({ message: `Internal server error: ${err}` });
   }
@@ -178,6 +210,35 @@ export const confirmPayment = async (req: AuthRequest, res: Response) => {
     });
 
     return res.status(200).json({ message: `Payment ${payment_type === "FULL" ? "confirmed" : "down payment recorded"}!`, data: updated });
+  } catch (err) {
+    return res.status(500).json({ message: `Internal server error: ${err}` });
+  }
+};
+
+export const cancelBooking = async (req: AuthRequest, res: Response) => {
+  try {
+    const { booking_id } = req.body;
+    const id_user = req.user!.userId;
+
+    if (!booking_id) return res.status(400).json({ message: "booking_id is required!" });
+
+    const booking = await prisma.bookings.findUnique({ where: { id: booking_id } });
+    if (!booking) return res.status(404).json({ message: "Booking not found!" });
+
+    if (booking.id_user !== id_user && req.user!.userRole !== "admin") {
+      return res.status(403).json({ message: "Forbidden!" });
+    }
+
+    if (booking.status !== "LOCKED") {
+      return res.status(400).json({ message: "Only LOCKED bookings can be cancelled here!" });
+    }
+
+    await prisma.bookings.update({
+      where: { id: booking_id },
+      data: { status: "CANCELLED", lock_expires_at: null },
+    });
+
+    return res.status(200).json({ message: "Booking cancelled. Slot released!" });
   } catch (err) {
     return res.status(500).json({ message: `Internal server error: ${err}` });
   }
